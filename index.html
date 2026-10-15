@@ -1,0 +1,930 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Desculpômetro</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap"
+/>
+<style>
+  /* Layout: uma "máquina caça-níquel" de desculpas sobre fita zebrada; 3 roletas lado a lado,
+     alavanca grande embaixo, e a desculpa final sai como um atestado carimbado. Visual único (não muda com o tema), de propósito. */
+  :root {
+    --tape: #ffcf1f; /* amarelo fita de "interditado" */
+    --tape-dark: #f2b705;
+    --ink: #14182b; /* azul-tinta quase preto */
+    --paper: #fffdf6;
+    --stamp: #d7263d; /* vermelho carimbo */
+    --steel: #2a3050;
+    --muted: #5b6080;
+    --font-display: "Bowlby One", "Arial Black", Impact, sans-serif;
+    --font-body: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    --item-h: 76px;
+    color-scheme: light;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    min-height: 100%;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--tape) 0 34px,
+      var(--tape-dark) 34px 68px
+    );
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: max(16px, env(safe-area-inset-top, 0px)) max(32px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--tape);
+    padding: 4px 10px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.1rem, 7vw, 4.2rem);
+    line-height: 0.95;
+    margin: 0;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  h1 .name {
+    color: var(--stamp);
+  }
+  .lede {
+    margin: 0;
+    max-width: 60ch;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .id-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .avatar {
+    width: clamp(110px, 22vw, 180px);
+    height: clamp(110px, 22vw, 180px);
+    flex: none;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 14px;
+    border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  /* ---------- máquina ---------- */
+  .machine {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow:
+      0 10px 0 #000a,
+      0 18px 40px #0004;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .reels {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .reel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .reel-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--tape);
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .window {
+    position: relative;
+    height: calc(var(--item-h) * 3);
+    overflow: hidden;
+    background: var(--paper);
+    border-radius: 10px;
+    border: 3px solid var(--steel);
+  }
+  .window::before,
+  .window::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--item-h);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .window::before {
+    top: 0;
+    background: linear-gradient(var(--ink) -40%, transparent);
+    opacity: 0.55;
+  }
+  .window::after {
+    bottom: 0;
+    background: linear-gradient(transparent, var(--ink) 140%);
+    opacity: 0.55;
+  }
+  .payline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--item-h);
+    height: var(--item-h);
+    border-block: 3px solid var(--stamp);
+    z-index: 3;
+    pointer-events: none;
+  }
+  .strip {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    will-change: transform;
+  }
+  .strip li {
+    height: var(--item-h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 10px;
+    font-weight: 800;
+    font-size: 0.98rem;
+    line-height: 1.15;
+    color: var(--ink);
+    border-bottom: 1px dashed #14182b22;
+    overflow: hidden;
+  }
+  .reel.landed .window {
+    border-color: var(--tape);
+  }
+
+  .reel-btn {
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--paper);
+    border: 2px solid var(--steel);
+    border-radius: 999px;
+    padding: 6px 10px;
+    min-height: 40px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .reel-btn:hover:not(:disabled) {
+    border-color: var(--tape);
+    color: var(--tape);
+  }
+  .reel-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .controls {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .lever {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 3.6vw, 1.5rem);
+    letter-spacing: 0.02em;
+    background: var(--stamp);
+    color: var(--paper);
+    border: none;
+    border-radius: 14px;
+    padding: 16px 28px;
+    min-height: 52px;
+    box-shadow: 0 6px 0 #7d1020;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      transform 0.08s,
+      box-shadow 0.08s;
+    flex: 1 1 260px;
+  }
+  .lever:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  .lever:active:not(:disabled) {
+    transform: translateY(5px);
+    box-shadow: 0 1px 0 #7d1020;
+  }
+  .lever:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .lever:focus-visible,
+  .reel-btn:focus-visible,
+  .act:focus-visible {
+    outline: 3px solid var(--tape);
+    outline-offset: 3px;
+  }
+
+  .counter {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--tape);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+  }
+  .counter strong {
+    font-size: 1.5rem;
+    display: block;
+    color: var(--paper);
+  }
+
+  /* ---------- atestado ---------- */
+  .certificate {
+    position: relative;
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    padding: 22px 22px 18px;
+    box-shadow: 8px 8px 0 var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cert-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 8px;
+  }
+  .excuse {
+    margin: 0;
+    font-size: clamp(1.25rem, 3.4vw, 1.75rem);
+    font-weight: 800;
+    line-height: 1.25;
+    max-width: 38ch;
+    text-wrap: pretty;
+  }
+  .excuse .hl {
+    background: linear-gradient(transparent 58%, #ffcf1f 58%);
+  }
+  .excuse.pending {
+    color: var(--muted);
+  }
+  .stamp {
+    position: absolute;
+    right: 18px;
+    bottom: 16px;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.05;
+    text-align: center;
+    color: var(--stamp);
+    border: 4px solid var(--stamp);
+    border-radius: 8px;
+    padding: 6px 10px;
+    transform: rotate(-12deg);
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+  .stamp small {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+  .stamp.show {
+    animation: thump 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) forwards;
+  }
+  @keyframes thump {
+    from {
+      opacity: 0;
+      transform: rotate(-12deg) scale(2.2);
+    }
+    to {
+      opacity: 0.9;
+      transform: rotate(-12deg) scale(1);
+    }
+  }
+  .cert-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-right: 130px;
+  }
+  .act {
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    min-height: 40px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .act.ghost {
+    background: transparent;
+    color: var(--ink);
+    box-shadow: inset 0 0 0 2px var(--ink);
+  }
+  .act:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .toast {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    align-self: center;
+  }
+
+  .history {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    padding: 16px 20px;
+  }
+  .history h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.1rem;
+    margin: 0 0 8px;
+  }
+  .history ol {
+    margin: 0;
+    padding-left: 1.4em;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .history li {
+    font-size: 0.95rem;
+  }
+  .history .empty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  footer {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  @media (max-width: 640px) {
+    body {
+      padding-block: max(16px, env(safe-area-inset-top, 0px))
+        max(24px, env(safe-area-inset-bottom, 0px));
+    }
+    .wrap {
+      gap: 16px;
+    }
+    :root {
+      --item-h: 78px;
+    }
+    .machine {
+      padding: 12px;
+      gap: 12px;
+      border-radius: 16px;
+    }
+    .reels {
+      gap: 6px;
+    }
+    .strip li {
+      font-size: 0.74rem;
+      padding: 0 4px;
+    }
+    .reel-label {
+      font-size: 0.58rem;
+    }
+    .reel-label .n {
+      display: none;
+    }
+    .reel-btn {
+      width: 100%;
+      font-size: 0.72rem;
+      padding: 8px 6px;
+    }
+    .controls {
+      gap: 10px;
+    }
+    .lever {
+      padding: 14px 20px;
+    }
+    .certificate {
+      padding: 18px 16px 16px;
+    }
+    .cert-actions {
+      padding-right: 0;
+      padding-bottom: 64px;
+    }
+    .cert-actions .act {
+      flex: 1 1 auto;
+    }
+    .stamp {
+      right: 12px;
+      bottom: 12px;
+      font-size: 0.85rem;
+      padding: 5px 8px;
+    }
+    .history {
+      padding: 14px 16px;
+    }
+    .counter {
+      text-align: left;
+    }
+    .id-row {
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar {
+      width: 84px;
+      height: 84px;
+      border-radius: 10px;
+    }
+    h1 {
+      font-size: clamp(1.7rem, 8vw, 2.6rem);
+    }
+  }
+
+  @media (max-width: 380px) {
+    :root {
+      --item-h: 72px;
+    }
+    .eyebrow {
+      font-size: 0.65rem;
+      padding: 3px 8px;
+    }
+    .strip li {
+      font-size: 0.68rem;
+      padding: 0 3px;
+      line-height: 1.05;
+    }
+    .excuse {
+      font-size: 1.1rem;
+    }
+    .avatar {
+      width: 68px;
+      height: 68px;
+    }
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stamp.show {
+      animation: none;
+      opacity: 0.9;
+    }
+    .lever {
+      transition: none;
+    }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Departamento de Furos Oficiais</span>
+    <div class="id-row">
+      <img class="avatar" src="Douglas.png" alt="Foto de Douglas" />
+      <h1>Desculpômetro do <span class="name">Douglas</span></h1>
+    </div>
+    <p class="lede">
+      Marcou um rolê? Ele já tem compromisso. Gire as três roletas e descubra
+      qual vai ser a desculpa dessa vez.
+    </p>
+  </header>
+
+  <section class="machine" aria-label="Roletas de desculpas">
+    <div class="reels">
+      <div class="reel" data-reel="0">
+        <div class="reel-label">
+          <span>Quem</span><span class="n">roleta 1</span>
+        </div>
+        <div class="window">
+          <div class="payline"></div>
+          <ul class="strip" aria-hidden="true"></ul>
+        </div>
+        <button class="reel-btn" type="button" id="spin0">Girar só essa</button>
+      </div>
+      <div class="reel" data-reel="1">
+        <div class="reel-label">
+          <span>Fez o quê</span><span class="n">roleta 2</span>
+        </div>
+        <div class="window">
+          <div class="payline"></div>
+          <ul class="strip" aria-hidden="true"></ul>
+        </div>
+        <button class="reel-btn" type="button" id="spin1">Girar só essa</button>
+      </div>
+      <div class="reel" data-reel="2">
+        <div class="reel-label">
+          <span>Quando/onde</span><span class="n">roleta 3</span>
+        </div>
+        <div class="window">
+          <div class="payline"></div>
+          <ul class="strip" aria-hidden="true"></ul>
+        </div>
+        <button class="reel-btn" type="button" id="spin2">Girar só essa</button>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="lever" type="button" id="lever">Gerar desculpa</button>
+      <div class="counter">furos registrados<strong id="count">0</strong></div>
+    </div>
+  </section>
+
+  <section class="certificate" aria-live="polite">
+    <div class="cert-head">
+      <span>Atestado de indisponibilidade</span>
+      <span id="protocol">Protocolo nº —</span>
+    </div>
+    <p class="excuse" id="excuse"></p>
+    <div class="cert-actions">
+      <button class="act" type="button" id="copy">Copiar desculpa</button>
+      <span class="toast" id="toast"></span>
+    </div>
+    <div class="stamp" id="stamp">
+      DESCULPA<br />AUTÊNTICA<small>100% VERÍDICA</small>
+    </div>
+  </section>
+
+  <section class="history">
+    <h2>Furos anteriores</h2>
+    <p class="empty" id="histEmpty">Nenhum ainda. Puxa a alavanca.</p>
+    <ol id="hist" reversed></ol>
+  </section>
+
+  <footer>
+    Qualquer semelhança com desculpas reais é mera coincidência. Ou não.
+  </footer>
+</div>
+
+<script>
+  (() => {
+    const OPENERS = [
+      "Pô, não vai dar:",
+      "Mano, hoje não rola:",
+      "Juro que eu ia, mas",
+      "Foi mal, galera,",
+      "Tava indo, só que",
+      "Vocês não vão acreditar:",
+      "Desmarca aí, porque",
+    ];
+
+    const REELS = [
+      [
+        // Quem
+        "minha tia-avó",
+        "meu cachorro",
+        "o síndico do prédio",
+        "um pombo",
+        "meu horóscopo",
+        "o motoboy do iFood",
+        "um coach quântico",
+        "o vizinho do 302",
+        "meu dentista",
+        "um alienígena",
+        "a minha geladeira",
+        "meu primo de Goiânia",
+        "o gerente do banco",
+        "uma capivara",
+        "meu personal",
+        "a Marcela",
+        "meu professor de mecânica",
+        "um gremista infiltrado",
+        "a gurizada do Colorado",
+        "um cara perdido no Salgado Filho",
+        "um CTG inteiro",
+        "a molecada do Parcão",
+        "um laçador aposentado",
+        "a vizinha fanática por chimarrão",
+        "o EPTC",
+        "um guri do Brique da Redenção",
+      ],
+      [
+        // Fez o quê
+        "sumiu num disco voador",
+        "me desafiou pra um duelo de xadrez",
+        "engoliu a chave do meu carro",
+        "entrou numa seita de bolo de pote",
+        "descobriu que é herdeiro de um trono",
+        "trancou a porta de casa por dentro",
+        "começou um curso de mímica comigo",
+        "me convocou pra reunião de condomínio",
+        "precisa que eu segure a escada",
+        "trocou minha senha do Wi-Fi",
+        "previu que eu ia escorregar no sabão",
+        "me inscreveu numa maratona",
+        "roubou meu único tênis",
+        "pediu pra eu cuidar de 14 gatos",
+        "abriu um processo contra mim",
+        "me chamou pra testemunhar num casamento",
+        "marcou prova em cima da hora",
+        "pediu carona até Canoas",
+        "me chamou pra buscar alguém no aeroporto",
+        "comprou ingresso de última hora pro Beira-Rio",
+        "ligou falando mal do Barcellos",
+        "trocou o horário do trabalho de mecânica",
+        "me arrastou pro Brique da Redenção",
+        "marcou um churrasco de improviso",
+        "quis me ensinar um passo de vanerão",
+        "trocou meu chimarrão por tereré",
+        "me chamou pra ver o pôr do sol no Gasômetro",
+        "multou meu carro de novo",
+      ],
+      [
+        // Quando/onde
+        "às 3 da manhã.",
+        "no meio da Marginal Tietê.",
+        "durante um eclipse lunar.",
+        "e eu sou o único que pode ajudar.",
+        "em Itaquaquecetuba.",
+        "porque Mercúrio está retrógrado.",
+        "bem na hora do nosso rolê.",
+        "e tem a ver com um boleto.",
+        "numa live de 9 horas.",
+        "e o Detran não aceita atraso.",
+        "num retiro de silêncio absoluto.",
+        "com a polícia federal no meio.",
+        "pela terceira vez essa semana.",
+        "e minha mãe falou que é prioridade.",
+        "em outro fuso horário.",
+        "e eu já tinha prometido desde 2019.",
+        "lá na UFRGS.",
+        "aqui em Canoas, no trânsito.",
+        "no Salgado Filho, o voo atrasou.",
+        "no dia de clássico contra o Grêmio.",
+        "véspera de prova de mecânica.",
+        "lá no Parque Marinha do Brasil.",
+        "na Orla do Guaíba.",
+        "no meio da Semana Farroupilha.",
+        "na fila do Mercado Público.",
+        "em Gramado, com frio e tudo.",
+        "na Expointer, lá em Esteio.",
+        "bem na hora do Grenal.",
+        "descendo a Serra, rumo a Canela.",
+      ],
+    ];
+
+    const REPEAT = 14; // quantas cópias da lista em cada fita
+    const DURATIONS = [1500, 2050, 2600];
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    const $ = (id) => document.getElementById(id);
+    const reelEls = [...document.querySelectorAll(".reel")];
+    const strips = reelEls.map((r) => r.querySelector(".strip"));
+    const reelBtns = [0, 1, 2].map((i) => $("spin" + i));
+    const lever = $("lever");
+    const excuseEl = $("excuse");
+    const stamp = $("stamp");
+    const copyBtn = $("copy");
+    const toast = $("toast");
+    const NAME = "Douglas";
+
+    const state = {
+      current: [0, 1, 2].map((i) => rand(REELS[i].length)),
+      spinning: [false, false, false],
+      count: 0,
+      history: [],
+      lastText: "",
+    };
+
+    function rand(n) {
+      return Math.floor(Math.random() * n);
+    }
+    function itemH() {
+      return parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--item-h"),
+      );
+    }
+
+    // monta as fitas
+    strips.forEach((ul, i) => {
+      const frag = document.createDocumentFragment();
+      for (let k = 0; k < REPEAT; k++) {
+        REELS[i].forEach((txt) => {
+          const li = document.createElement("li");
+          li.textContent = txt.replace(/\.$/, "");
+          frag.appendChild(li);
+        });
+      }
+      ul.appendChild(frag);
+    });
+
+    // posiciona a fita i para que o item absoluto `abs` fique na linha do meio
+    function place(i, abs, ms) {
+      const ul = strips[i];
+      ul.style.transition = ms
+        ? `transform ${ms}ms cubic-bezier(.12,.75,.18,1.03)`
+        : "none";
+      ul.style.transform = `translateY(${-(abs - 1) * itemH()}px)`;
+    }
+    function restingAbs(i) {
+      return REELS[i].length + state.current[i];
+    }
+
+    function layoutAll() {
+      [0, 1, 2].forEach((i) => place(i, restingAbs(i), 0));
+    }
+
+    function spinReel(i, delayExtra = 0) {
+      return new Promise((resolve) => {
+        const len = REELS[i].length;
+        let target = rand(len);
+        if (target === state.current[i])
+          target = (target + 1 + rand(len - 1)) % len;
+        const ms = reduceMotion ? 0 : DURATIONS[i] + delayExtra;
+        state.spinning[i] = true;
+        reelEls[i].classList.remove("landed");
+        updateButtons();
+        const finalAbs = len * (REPEAT - 2) + target;
+        // começa da posição de repouso (cópia 1) e desce até perto do fim
+        place(i, restingAbs(i), 0);
+        void strips[i].offsetHeight;
+        place(i, finalAbs, ms);
+        const done = () => {
+          state.current[i] = target;
+          state.spinning[i] = false;
+          place(i, restingAbs(i), 0); // volta pra cópia equivalente sem animar
+          reelEls[i].classList.add("landed");
+          updateButtons();
+          resolve();
+        };
+        if (!ms) {
+          done();
+          return;
+        }
+        setTimeout(done, ms + 30);
+      });
+    }
+
+    function updateButtons() {
+      const any = state.spinning.some(Boolean);
+      lever.disabled = any;
+      lever.textContent = any ? "Inventando…" : "Gerar desculpa";
+      reelBtns.forEach((b, i) => (b.disabled = any));
+      copyBtn.disabled = any || !state.lastText;
+    }
+
+    function buildExcuse() {
+      const [a, b, c] = [0, 1, 2].map((i) => REELS[i][state.current[i]]);
+      const opener = OPENERS[rand(OPENERS.length)];
+      return { name: NAME, opener, a, b, c };
+    }
+
+    function render(ex, animate) {
+      excuseEl.classList.remove("pending");
+      excuseEl.innerHTML = "";
+      const who = document.createElement("strong");
+      who.textContent = `“${ex.opener} `;
+      who.style.fontWeight = "800";
+      excuseEl.append(who);
+      [ex.a, ex.b, ex.c].forEach((part, k) => {
+        const s = document.createElement("span");
+        s.className = "hl";
+        s.textContent = part;
+        excuseEl.append(s);
+        excuseEl.append(document.createTextNode(k < 2 ? " " : "”"));
+      });
+      const sig = document.createElement("div");
+      sig.style.cssText =
+        "font-size:.95rem;font-weight:600;color:var(--muted);margin-top:8px";
+      sig.textContent = `— ${ex.name}, mais uma vez`;
+      excuseEl.append(sig);
+
+      state.lastText = `“${ex.opener} ${ex.a} ${ex.b} ${ex.c}” — ${ex.name}`;
+      $("protocol").textContent =
+        "Protocolo nº " + String(Math.floor(100000 + Math.random() * 899999));
+
+      stamp.classList.remove("show");
+      if (animate) {
+        void stamp.offsetWidth;
+      }
+      stamp.classList.add("show");
+    }
+
+    function addHistory(text) {
+      state.history.unshift(text);
+      state.history = state.history.slice(0, 8);
+      const ol = $("hist");
+      ol.innerHTML = "";
+      state.history.forEach((t) => {
+        const li = document.createElement("li");
+        li.textContent = t;
+        ol.append(li);
+      });
+      $("histEmpty").hidden = state.history.length > 0;
+    }
+
+    async function spin(indices) {
+      if (state.spinning.some(Boolean)) return;
+      excuseEl.classList.add("pending");
+      excuseEl.textContent = "Consultando o banco de desculpas…";
+      stamp.classList.remove("show");
+      state.lastText = "";
+      toast.textContent = "";
+      await Promise.all(indices.map((i) => spinReel(i)));
+      const ex = buildExcuse();
+      render(ex, true);
+      state.count += 1;
+      $("count").textContent = state.count;
+      addHistory(state.lastText);
+      updateButtons();
+    }
+
+    lever.addEventListener("click", () => spin([0, 1, 2]));
+    reelBtns.forEach((b, i) => b.addEventListener("click", () => spin([i])));
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && e.target === document.body) {
+        e.preventDefault();
+        spin([0, 1, 2]);
+      }
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      if (!state.lastText) return;
+      try {
+        await navigator.clipboard.writeText(state.lastText);
+        toast.textContent = "Copiada. Agora manda no grupo.";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(excuseEl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        toast.textContent = "Texto selecionado. Use Ctrl+C para copiar.";
+      }
+    });
+
+    window.addEventListener("resize", layoutAll);
+
+    // estado inicial: já mostra uma desculpa de exemplo
+    layoutAll();
+    reelEls.forEach((r) => r.classList.add("landed"));
+    render(buildExcuse(), false);
+    updateButtons();
+    if (document.fonts && document.fonts.ready)
+      document.fonts.ready.then(layoutAll);
+  })();
+</script>
