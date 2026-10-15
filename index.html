@@ -785,7 +785,9 @@
     }
 
     function layoutAll() {
-      [0, 1, 2].forEach((i) => place(i, restingAbs(i), 0));
+      [0, 1, 2].forEach((i) => {
+        if (!state.spinning[i]) place(i, restingAbs(i), 0);
+      });
     }
 
     function spinReel(i, delayExtra = 0) {
