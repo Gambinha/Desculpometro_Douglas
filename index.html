@@ -737,6 +737,7 @@
     const reelBtns = [0, 1, 2].map((i) => $("spin" + i));
     const lever = $("lever");
     const excuseEl = $("excuse");
+    const certEl = document.querySelector(".certificate");
     const stamp = $("stamp");
     const copyBtn = $("copy");
     const toast = $("toast");
@@ -893,6 +894,10 @@
       $("count").textContent = state.count;
       addHistory(state.lastText);
       updateButtons();
+      certEl.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
     }
 
     lever.addEventListener("click", () => spin([0, 1, 2]));
